@@ -26,6 +26,7 @@ import org.scalatest.Matchers
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression._
 import org.apache.spark.mllib.util.LocalSparkContext
+import org.apache.spark.mllib.util.TestingUtils._
 
 object LogisticRegressionSuite {
 
@@ -81,9 +82,8 @@ class LogisticRegressionSuite extends FunSuite with LocalSparkContext with Match
     val model = lr.run(testRDD)
 
     // Test the weights
-    val weight0 = model.weights(0)
-    assert(weight0 >= -1.60 && weight0 <= -1.40, weight0 + " not in [-1.6, -1.4]")
-    assert(model.intercept >= 1.9 && model.intercept <= 2.1, model.intercept + " not in [1.9, 2.1]")
+    assert(model.weights(0).almostEquals(-1.5244128696247), "weight0 should be -1.5244128696247")
+    assert(model.intercept.almostEquals(1.99847044268), "intercept should be 1.99847044268")
 
     val validationData = LogisticRegressionSuite.generateLogisticInput(A, B, nPoints, 17)
     val validationRDD = sc.parallelize(validationData, 2)
@@ -113,9 +113,9 @@ class LogisticRegressionSuite extends FunSuite with LocalSparkContext with Match
 
     val model = lr.run(testRDD, initialWeights)
 
-    val weight0 = model.weights(0)
-    assert(weight0 >= -1.60 && weight0 <= -1.40, weight0 + " not in [-1.6, -1.4]")
-    assert(model.intercept >= 1.9 && model.intercept <= 2.1, model.intercept + " not in [1.9, 2.1]")
+    // Test the weights
+    assert(model.weights(0).almostEquals(-1.496289107169), "weight0 should be --1.496289107169")
+    assert(model.intercept.almostEquals(1.9718077770366), "intercept should be 1.9718077770366")
 
     val validationData = LogisticRegressionSuite.generateLogisticInput(A, B, nPoints, 17)
     val validationRDD = sc.parallelize(validationData, 2)

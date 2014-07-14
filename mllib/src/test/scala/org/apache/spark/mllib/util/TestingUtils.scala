@@ -22,24 +22,25 @@ import org.apache.spark.mllib.linalg.Vector
 object TestingUtils {
 
   implicit class DoubleWithAlmostEquals(val x: Double) {
-    // An improved version of AlmostEquals would always divide by the larger number.
-    // This will avoid the problem of diving by zero.
-    def almostEquals(y: Double, epsilon: Double = 1E-10): Boolean = {
-      if(x == y) {
+    def almostEquals(y: Double, eps: Double = 1E-6): Boolean = {
+      val absX = math.abs(x)
+      val absY = math.abs(y)
+      val diff = math.abs(x - y)
+      if (x == y) {
         true
-      } else if(math.abs(x) > math.abs(y)) {
-        math.abs(x - y) / math.abs(x) < epsilon
+      } else if (absX < 1E-15 || absY < 1E-15) {
+        // x or y is zero or extremely close to it; the relative error is meaningless here.
+        // As a result, we do absolute error comparison instead.
+        diff < eps
       } else {
-        math.abs(x - y) / math.abs(y) < epsilon
+        diff < eps * math.min(absX, absY)
       }
     }
   }
 
   implicit class VectorWithAlmostEquals(val x: Vector) {
-    def almostEquals(y: Vector, epsilon: Double = 1E-10): Boolean = {
-      x.toArray.corresponds(y.toArray) {
-        _.almostEquals(_, epsilon)
-      }
-    }
+    def almostEquals(y: Vector, eps: Double = 1E-6): Boolean =
+      x.toArray.zip(y.toArray).forall(x => x._1.almostEquals(x._2, eps))
   }
+
 }

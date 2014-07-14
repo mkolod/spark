@@ -20,8 +20,20 @@ package org.apache.spark.mllib.evaluation
 import org.scalatest.FunSuite
 
 import org.apache.spark.mllib.util.LocalSparkContext
+import org.apache.spark.mllib.util.TestingUtils._
 
 class BinaryClassificationMetricsSuite extends FunSuite with LocalSparkContext {
+
+  implicit class SeqDoubleWithAlmostEquals(val x: Seq[Double]) {
+    def almostEquals(y: Seq[Double], eps: Double = 1E-6): Boolean =
+      x.zip(y).forall(x => x._1.almostEquals(x._2))
+  }
+
+  implicit class SeqDoubleDoubleWithAlmostEquals(val x: Seq[(Double, Double)]) {
+    def almostEquals(y: Seq[(Double, Double)], eps: Double = 1E-6): Boolean =
+      x.zip(y).forall(x => x._1._1.almostEquals(x._2._1) && x._1._2.almostEquals(x._2._2))
+  }
+
   test("binary evaluation metrics") {
     val scoreAndLabels = sc.parallelize(
       Seq((0.1, 0.0), (0.1, 1.0), (0.4, 0.0), (0.6, 0.0), (0.6, 1.0), (0.6, 1.0), (0.8, 1.0)), 2)
@@ -39,16 +51,16 @@ class BinaryClassificationMetricsSuite extends FunSuite with LocalSparkContext {
     val rocCurve = Seq((0.0, 0.0)) ++ fpr.zip(recall) ++ Seq((1.0, 1.0))
     val pr = recall.zip(precision)
     val prCurve = Seq((0.0, 1.0)) ++ pr
-    val f1 = pr.map { case (r, p) => 2.0 * (p * r) / (p + r) }
+    val f1 = pr.map { case (r, p) => 2.0 * (p * r) / (p + r)}
     val f2 = pr.map { case (r, p) => 5.0 * (p * r) / (4.0 * p + r)}
-    assert(metrics.thresholds().collect().toSeq === threshold)
-    assert(metrics.roc().collect().toSeq === rocCurve)
-    assert(metrics.areaUnderROC() === AreaUnderCurve.of(rocCurve))
-    assert(metrics.pr().collect().toSeq === prCurve)
-    assert(metrics.areaUnderPR() === AreaUnderCurve.of(prCurve))
-    assert(metrics.fMeasureByThreshold().collect().toSeq === threshold.zip(f1))
-    assert(metrics.fMeasureByThreshold(2.0).collect().toSeq === threshold.zip(f2))
-    assert(metrics.precisionByThreshold().collect().toSeq === threshold.zip(precision))
-    assert(metrics.recallByThreshold().collect().toSeq === threshold.zip(recall))
+    assert(metrics.thresholds().collect().toSeq.almostEquals(threshold))
+    assert(metrics.roc().collect().toSeq.almostEquals(rocCurve))
+    assert(metrics.areaUnderROC().almostEquals(AreaUnderCurve.of(rocCurve)))
+    assert(metrics.pr().collect().toSeq.almostEquals(prCurve))
+    assert(metrics.areaUnderPR().almostEquals((AreaUnderCurve.of(prCurve))))
+    assert(metrics.fMeasureByThreshold().collect().toSeq.almostEquals(threshold.zip(f1)))
+    assert(metrics.fMeasureByThreshold(2.0).collect().toSeq.almostEquals(threshold.zip(f2)))
+    assert(metrics.precisionByThreshold().collect().toSeq.almostEquals(threshold.zip(precision)))
+    assert(metrics.recallByThreshold().collect().toSeq.almostEquals(threshold.zip(recall)))
   }
 }
